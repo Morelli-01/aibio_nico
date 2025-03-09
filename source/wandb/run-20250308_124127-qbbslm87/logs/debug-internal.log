@@ -1,0 +1,7 @@
+{"time":"2025-03-08T12:41:27.50539389+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/homes/nmorelli/aibio_nico/source/wandb/run-20250308_124127-qbbslm87/logs/debug-core.log"}
+{"time":"2025-03-08T12:41:27.627223551+01:00","level":"INFO","msg":"created new stream","id":"qbbslm87"}
+{"time":"2025-03-08T12:41:27.627278288+01:00","level":"INFO","msg":"stream: started","id":"qbbslm87"}
+{"time":"2025-03-08T12:41:27.627419081+01:00","level":"INFO","msg":"sender: started","stream_id":"qbbslm87"}
+{"time":"2025-03-08T12:41:27.62740132+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"qbbslm87"}
+{"time":"2025-03-08T12:41:27.62752588+01:00","level":"INFO","msg":"handler: started","stream_id":"qbbslm87"}
+{"time":"2025-03-08T12:41:27.925154941+01:00","level":"INFO","msg":"Starting system monitor"}

@@ -1,0 +1,8 @@
+{"time":"2025-03-08T12:44:38.19190588+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/homes/nmorelli/aibio_nico/source/wandb/run-20250308_124438-fvrtqudx/logs/debug-core.log"}
+{"time":"2025-03-08T12:44:38.312346362+01:00","level":"INFO","msg":"created new stream","id":"fvrtqudx"}
+{"time":"2025-03-08T12:44:38.31241117+01:00","level":"INFO","msg":"stream: started","id":"fvrtqudx"}
+{"time":"2025-03-08T12:44:38.312516451+01:00","level":"INFO","msg":"handler: started","stream_id":"fvrtqudx"}
+{"time":"2025-03-08T12:44:38.312507399+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"fvrtqudx"}
+{"time":"2025-03-08T12:44:38.312607997+01:00","level":"INFO","msg":"sender: started","stream_id":"fvrtqudx"}
+{"time":"2025-03-08T12:44:38.631348414+01:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-03-08T12:44:53.633079711+01:00","level":"ERROR","msg":"monitor: error sampling metrics: rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:44751: connect: connection refused\""}

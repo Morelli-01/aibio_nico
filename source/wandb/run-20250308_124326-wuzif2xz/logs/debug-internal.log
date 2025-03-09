@@ -1,0 +1,7 @@
+{"time":"2025-03-08T12:43:26.699527535+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/homes/nmorelli/aibio_nico/source/wandb/run-20250308_124326-wuzif2xz/logs/debug-core.log"}
+{"time":"2025-03-08T12:43:26.814664561+01:00","level":"INFO","msg":"created new stream","id":"wuzif2xz"}
+{"time":"2025-03-08T12:43:26.814707894+01:00","level":"INFO","msg":"stream: started","id":"wuzif2xz"}
+{"time":"2025-03-08T12:43:26.814818179+01:00","level":"INFO","msg":"sender: started","stream_id":"wuzif2xz"}
+{"time":"2025-03-08T12:43:26.814938838+01:00","level":"INFO","msg":"handler: started","stream_id":"wuzif2xz"}
+{"time":"2025-03-08T12:43:26.814810115+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"wuzif2xz"}
+{"time":"2025-03-08T12:43:27.144971881+01:00","level":"INFO","msg":"Starting system monitor"}

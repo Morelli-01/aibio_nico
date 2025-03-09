@@ -1,0 +1,80 @@
+{
+  "os": "Linux-5.15.0-117-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.9.13",
+  "startedAt": "2025-03-08T11:30:43.379548Z",
+  "program": "/homes/nmorelli/aibio_nico/source/test.ipynb",
+  "codePath": "test.ipynb",
+  "email": "284023@studenti.unimore.it",
+  "root": "/homes/nmorelli/aibio_nico/source",
+  "host": "ailb-login-03",
+  "executable": "/usr/local/anaconda3/bin/python",
+  "codePathLocal": "test.ipynb",
+  "cpu_count": 28,
+  "cpu_count_logical": 56,
+  "gpu": "Tesla P100-PCIE-16GB",
+  "gpu_count": 8,
+  "disk": {
+    "/": {
+      "total": "257421955072",
+      "used": "97860763648"
+    }
+  },
+  "memory": {
+    "total": "270175375360"
+  },
+  "cpu": {
+    "count": 28,
+    "countLogical": 56
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    },
+    {
+      "name": "Tesla P100-PCIE-16GB",
+      "memoryTotal": "17179869184",
+      "cudaCores": 3584,
+      "architecture": "Pascal"
+    }
+  ],
+  "cudaVersion": "12.2"
+}

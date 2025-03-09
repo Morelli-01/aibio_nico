@@ -1,0 +1,18 @@
+{"time":"2025-03-08T12:45:10.065086244+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/homes/nmorelli/aibio_nico/source/wandb/run-20250308_124510-ary9ijq0/logs/debug-core.log"}
+{"time":"2025-03-08T12:45:10.183234079+01:00","level":"INFO","msg":"created new stream","id":"ary9ijq0"}
+{"time":"2025-03-08T12:45:10.183308192+01:00","level":"INFO","msg":"stream: started","id":"ary9ijq0"}
+{"time":"2025-03-08T12:45:10.183401788+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"ary9ijq0"}
+{"time":"2025-03-08T12:45:10.183465679+01:00","level":"INFO","msg":"handler: started","stream_id":"ary9ijq0"}
+{"time":"2025-03-08T12:45:10.183523397+01:00","level":"INFO","msg":"sender: started","stream_id":"ary9ijq0"}
+{"time":"2025-03-08T12:45:10.498280356+01:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-03-08T12:45:12.679103648+01:00","level":"INFO","msg":"Pausing system monitor"}
+{"time":"2025-03-08T12:46:23.907977718+01:00","level":"INFO","msg":"Resuming system monitor"}
+{"time":"2025-03-08T12:46:23.949665134+01:00","level":"INFO","msg":"Pausing system monitor"}
+{"time":"2025-03-08T12:46:24.122014134+01:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/files/nmorelli-unimore/aibio_prj/ary9ijq0/file_stream"}
+{"time":"2025-03-08T12:46:24.122133743+01:00","level":"ERROR+4","msg":"filestream: fatal error: filestream: failed to upload: 404 Not Found path=files/nmorelli-unimore/aibio_prj/ary9ijq0/file_stream: {\"error\":\"run aibio_prj/ary9ijq0 not found while streaming file\"}"}
+{"time":"2025-03-08T12:46:25.727136665+01:00","level":"INFO","msg":"Resuming system monitor"}
+{"time":"2025-03-08T12:46:25.743149837+01:00","level":"INFO","msg":"Pausing system monitor"}
+{"time":"2025-03-08T12:46:26.276740385+01:00","level":"INFO","msg":"Resuming system monitor"}
+{"time":"2025-03-08T12:46:26.546119457+01:00","level":"INFO","msg":"api: retrying HTTP error","status":409,"url":"https://api.wandb.ai/graphql","body":"{\"errors\":[{\"message\":\"run ary9ijq0 was previously created and deleted; try a new run name\",\"path\":[\"upsertBucket\"]}],\"data\":{\"upsertBucket\":null}}"}
+{"time":"2025-03-08T12:46:29.044564805+01:00","level":"INFO","msg":"api: retrying HTTP error","status":409,"url":"https://api.wandb.ai/graphql","body":"{\"errors\":[{\"message\":\"run ary9ijq0 was previously created and deleted; try a new run name\",\"path\":[\"upsertBucket\"]}],\"data\":{\"upsertBucket\":null}}"}
+{"time":"2025-03-08T12:46:33.540547608+01:00","level":"INFO","msg":"api: retrying HTTP error","status":409,"url":"https://api.wandb.ai/graphql","body":"{\"errors\":[{\"message\":\"run ary9ijq0 was previously created and deleted; try a new run name\",\"path\":[\"upsertBucket\"]}],\"data\":{\"upsertBucket\":null}}"}

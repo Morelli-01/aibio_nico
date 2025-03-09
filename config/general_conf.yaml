@@ -1,0 +1,31 @@
+# MODEL
+net: simclr # choose among [simclr]
+backbone_name: vit_small
+
+# DIRECTORIES
+checkpoint_dir: /homes/nmorelli/aibio_nico/checkpoint
+dataset_dir: /work/ai4bio2024/rxrx1
+load_checkpoint: ~
+load_backbone: ~
+metadata_path: /work/h2020deciderficarra_shared/rxrx1/metadata/m_3c_experiment_strat.csv
+
+# TRAINING OPTIONS
+epochs: 10
+batch_size: 256
+loss: simclrloss # choose among [simclrloss, ce]
+opt: adam # choose among [adam,]
+lr: 1e-5
+evaluation_freq: 4
+model_save_freq: 10
+sched_pow: 1
+num_classes: 4
+
+# HARDWARE
+device: gpu
+multiple_gpus: True
+train_workers: 16
+evaluation_workers: 16
+
+# WNADB CONFIG
+project_name: "aibio_prj"
+run_name: "vit_small_back_test_2"

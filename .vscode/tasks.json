@@ -1,0 +1,54 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Backbone Train Script",
+      "type": "shell",
+      "command": "srun",
+      "args": [
+        "--gres=gpu:1",
+        "--time=4:00:00",
+        "--partition=all_serial",
+        "--mem=20G",
+        "--account=ai4bio2024",
+        "--nodelist=ailb-login-03",
+        "--cpus-per-task=8",
+        "--pty",
+        "bash",
+        "-c",
+        "\"/homes/nmorelli/.venv/bin/python3 ${file} /homes/nmorelli/aibio_nico/config/general_conf.yaml\""
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Head Train Script",
+      "type": "shell",
+      "command": "/homes/nmorelli/.venv/bin/python3",
+      "args": [
+        "${file}",
+        "/homes/nmorelli/aibio_nico/config/head_conf.yaml"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

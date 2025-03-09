@@ -1,0 +1,7 @@
+{"time":"2025-03-08T12:47:05.448062025+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.8","symlink path":"/homes/nmorelli/aibio_nico/source/wandb/run-20250308_124705-9z5329u2/logs/debug-core.log"}
+{"time":"2025-03-08T12:47:05.569359158+01:00","level":"INFO","msg":"created new stream","id":"9z5329u2"}
+{"time":"2025-03-08T12:47:05.569442446+01:00","level":"INFO","msg":"stream: started","id":"9z5329u2"}
+{"time":"2025-03-08T12:47:05.569512829+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"9z5329u2"}
+{"time":"2025-03-08T12:47:05.569589288+01:00","level":"INFO","msg":"handler: started","stream_id":"9z5329u2"}
+{"time":"2025-03-08T12:47:05.569683731+01:00","level":"INFO","msg":"sender: started","stream_id":"9z5329u2"}
+{"time":"2025-03-08T12:47:05.911284714+01:00","level":"INFO","msg":"Starting system monitor"}
