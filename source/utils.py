@@ -1,4 +1,7 @@
+from importlib import metadata
 import os, sys
+
+from matplotlib.pyplot import step
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -7,6 +10,7 @@ import torchvision.transforms.v2 as transforms
 from prettytable import PrettyTable
 import torch, wandb
 import torch.nn.functional as F
+import torchvision.transforms.v2.functional as transform_F
 from tqdm import tqdm
 import numpy as np
 from typing import Callable, List, Tuple
@@ -93,19 +97,25 @@ def config_loader(config, dataset=None):
         options['backbone_name'] = config['backbone_name']
     if config['device'] is not None:
         options['device'] = config['device']
-
     net = load_net(config["net"], options)
 
     loss = load_loss(config["loss"], options)
-    opt, sched = load_opt(config, net)
+    opt, sched = load_opt(config, net, dataset)
     return (net, loss, opt, sched)
 
 
 def load_net(netname: str, options={}) -> torch.nn.Module:
     if netname == "simclr":
         assert "backbone_name" in options.keys(), "The backbone_name option was not provided!"
-        return SimCLR(backbone=options["backbone_name"])
-
+        return SimCLR(backbone=options["backbone_name"], num_classes=options["num_classes"])
+    if netname == "vit_base":
+        return vit_base()
+    elif netname == "vit_tiny":
+        return vit_tiny()
+    elif netname == "vit_small":
+        return vit_small()
+    elif netname == "vit_large":
+        return vit_large()
     else:
         raise ValueError("Invalid netname")
 
@@ -119,13 +129,28 @@ def load_loss(lossname: str, options={}) -> Callable:
         raise ValueError("Invalid lossname")
 
 
-def load_opt(config: dict, net: torch.nn.Module) -> torch.optim.Optimizer:
+def load_opt(config: dict, net: torch.nn.Module, dataset: torch.utils.data.Dataset) -> torch.optim.Optimizer:
     if config['opt'] == "adam":
-        opt = torch.optim.Adam(net.parameters(), lr=float(config['lr']), weight_decay=0.00001)
-        sched = torch.optim.lr_scheduler.PolynomialLR(opt, total_iters=config['epochs'], power=config['sched_pow'])
-        return opt, sched
+        opt = torch.optim.Adam(net.parameters(), lr=float(config['lr']))
+    elif config['opt'] == "adamW":
+        opt = torch.optim.AdamW(net.parameters(), float(config['lr']))
     else:
         raise ValueError("Invalid optimizer")
+
+    sched = None
+    if config["sched"] is None or config["sched"] == "poly":
+        sched = torch.optim.lr_scheduler.PolynomialLR(opt, total_iters=config['epochs'], power=config['sched_pow'])
+    elif config["sched"] == "onecycle":
+        sched = torch.optim.lr_scheduler.OneCycleLR(
+            opt,
+            max_lr=float(config['lr']),
+            steps_per_epoch=(len(dataset) // int(config["batch_size"])),
+            epochs=config["epochs"]
+        )
+    elif config["sched"] == "CosineAnnealingWarmRestarts":
+        sched = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(opt, T_0=2, T_mult=2, eta_min=1e-6)
+
+    return opt, sched
 
 
 def load_backbone(config: dict, net: torch.nn.Module):
@@ -205,18 +230,21 @@ def validation(net, val_loader, losser, epoch) -> Tuple[List[float], float]:
     return validation_loss_values  # Return the collected validation loss values
 
 
-def evaluate(net, test_loader, device, epoch):
+def evaluate(net, test_loader, device, epoch, losser):
     net = net.to(device)
     net.eval()
     with torch.no_grad():
         predictions = []
         labels = []
         net.eval()
+        validation_loss_values = []
         stream_ = torch.cuda.Stream()
-        for x, y, _ in tqdm(test_loader, desc=f"Eval-{epoch+1}"):
+        for x, y, metadata in tqdm(test_loader, desc=f"Eval-{epoch+1}"):
+            validation_loss_values.append(losser((x, y, metadata), net, stream_).item())
             with torch.cuda.stream(stream_):
                 x, y = x.to(device, non_blocking=True), y.to(device, non_blocking=True)
             pred = net(x)
+
             if len(pred.shape) < 2:
                 pred = pred.argmax(dim=0)
                 predictions.append(torch.unsqueeze(pred, 0))
@@ -229,7 +257,7 @@ def evaluate(net, test_loader, device, epoch):
         labels = torch.cat(labels, dim=0)
         acc = torch.where(predictions == labels, 1, 0).sum() / len(labels)
 
-    return acc, predictions, labels
+    return acc, predictions, labels, validation_loss_values
 
 
 def load_weights(checkpoint_path: str, net: torch.nn.Module, device: torch.cuda.device) -> torch.utils.checkpoint:
@@ -261,3 +289,77 @@ def save_model(epoch, net, opt, train_loss, val_loss, batch_size, checkpoint_dir
         name
     )
     print(f"Model saved in {name}.")
+
+    # class GaussianBlur(object):
+    #     """
+    #     Apply Gaussian Blur to the PIL image.
+    #     """
+
+    #     def __init__(self, p=0.5, radius_min=0.1, radius_max=2.):
+    #         self.prob = p
+    #         self.radius_min = radius_min
+    #         self.radius_max = radius_max
+
+    #     def __call__(self, img):
+    #         do_it = random.random() <= self.prob
+    #         if not do_it:
+    #             return img
+
+    #         return img.filter(
+    #             ImageFilter.GaussianBlur(
+    #                 radius=random.uniform(self.radius_min, self.radius_max)
+    #             )
+    #         )
+
+    # class Solarization(object):
+    #     """
+    #     Apply Solarization to the PIL image.
+    #     """
+
+    #     def __init__(self, p):
+    #         self.p = p
+
+    #     def __call__(self, img):
+    #         if random.random() < self.p:
+    #             return ImageOps.solarize(img)
+    #         else:
+    #             return img
+
+
+# class GaussianBlur(transforms.Transform):
+#     """
+#     Apply Gaussian Blur to the image tensor.
+#     """
+
+#     def __init__(self, p=0.5, radius_min=0.1, radius_max=2.0):
+#         super().__init__()
+#         self.p = p
+#         self.radius_min = radius_min
+#         self.radius_max = radius_max
+
+#     def _apply_image(self, img: torch.Tensor) -> torch.Tensor:
+#         if random.random() > self.p:
+#             return img
+#         radius = random.uniform(self.radius_min, self.radius_max)
+#         return transform_F.gaussian_blur(img, kernel_size=int(2 * round(radius) + 1))
+
+#     def forward(self, img: torch.Tensor) -> torch.Tensor:
+#         return self._apply_image(img)
+
+
+# class Solarization(transforms.Transform):
+#     """
+#     Apply Solarization to the image tensor.
+#     """
+
+#     def __init__(self, p: float):
+#         super().__init__()
+#         self.p = p
+
+#     def _apply_image(self, img: torch.Tensor) -> torch.Tensor:
+#         if random.random() > self.p:
+#             return img
+#         return transform_F.solarize(img)
+
+#     def forward(self, img: torch.Tensor) -> torch.Tensor:
+#         return self._apply_image(img)

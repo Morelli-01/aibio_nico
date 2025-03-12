@@ -7,7 +7,7 @@
       "command": "srun",
       "args": [
         "--gres=gpu:1",
-        "--time=4:00:00",
+        "--time=1:00:00",
         "--partition=all_serial",
         "--mem=20G",
         "--account=ai4bio2024",

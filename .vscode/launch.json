@@ -8,7 +8,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "/homes/nmorelli/aibio_nico/config/head_conf.yaml"
+                "/homes/nmorelli/aibio_nico/config/general_conf.yaml"
             ]
         }
     ]

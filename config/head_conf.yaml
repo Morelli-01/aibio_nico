@@ -6,26 +6,28 @@ backbone_name: vit_small
 checkpoint_dir: /homes/nmorelli/aibio_nico/checkpoint
 dataset_dir: /work/ai4bio2024/rxrx1/
 load_checkpoint: ~
-load_backbone: /work/h2020deciderficarra_shared/rxrx1/checkpoints/dino/custom_centering_1/checkpoint0075.pth
+load_backbone: /homes/nmorelli/aibio_nico/checkpoint/vit_small_norm
 metadata_path: /work/h2020deciderficarra_shared/rxrx1/metadata/m_3c_experiment_strat.csv
 
 # TRAINING OPTIONS
-epochs: 200
+epochs: 50
 batch_size: 256
 loss: ClassificationLoss # choose among [simclrloss, ClassificationLoss]
-opt: adam # choose among [adam,]
-lr: 0.05
-evaluation_freq: 4
+opt: adamW # choose among [adam,]
+sched: ~ # []
+lr: 0.005
+0evaluation_freq: 4
 model_save_freq: 10
 sched_pow: 1
-num_classes: ~
+num_classes: 4
+dataset_norm: True
 
 # HARDWARE
 device: gpu
 multiple_gpus: False
-train_workers: 16
-evaluation_workers: 16
+train_workers: 12
+evaluation_workers: 12
 
 # WNADB CONFIG
 project_name: "aibio_prj"
-run_name: "test_head_lr_lower"
+run_name: "vit_small_norm_head_new_opt"

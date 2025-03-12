@@ -22,15 +22,17 @@ if __name__ == '__main__':
     config = load_yaml()
     device = load_device(config)
 
-    transform = transforms.Compose([
-        transforms.ToImage(),
-    ])
+    # transform = transforms.Compose([
+    # transforms.ToImage(),
+    # ])
     # dataset = ImageFolder(config["dataset_dir"], transform=transform)
-    dataset = Rxrx1(root_dir=config["dataset_dir"], metadata_path=config["metadata_path"])
+    dataset = Rxrx1(root_dir=config["dataset_dir"], metadata_path=config["metadata_path"],
+                    dataset_norm=config["dataset_norm"])
     net, losser, opt, sched = config_loader(config, dataset)
     net = load_backbone_(net, config)
 
-    tr_ = Trainer(net, device, config, opt, losser, collate=None, scheduler=sched)
+    # tr_ = Trainer(net, device, config, opt, losser, collate=None, scheduler=sched)
+    tr_ = DinoTrainer(net, device, config, opt, losser, collate=None, scheduler=sched)
     tr_.train(dataset)
 
     exit(0)

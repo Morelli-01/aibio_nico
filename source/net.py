@@ -11,6 +11,10 @@ import torch
 import torchvision.transforms.v2 as v2
 import torch.nn.functional as F
 from vision_transformer import *
+from PIL import Image
+from source import utils
+import numpy as np
+import torch.distributed as dist
 
 
 class GradientReversalFunction(torch.autograd.Function):
@@ -72,7 +76,7 @@ class SimCLR(nn.Module):
             nn.ReLU(),
             nn.Linear(self.embed_dim, self.num_classes),
         )
-        self.grl = GradientReversalLayer()
+        # self.grl = GradientReversalLayer()
 
     def get_embedding(self, x):
         return self.backbone(x).squeeze()
@@ -80,7 +84,7 @@ class SimCLR(nn.Module):
     def forward(self, x):
         features = self.backbone(x)
         projections = self.projection_head(features)
-        cls = self.cls_head(self.grl(features))
+        cls = self.cls_head(features)
         return projections, cls
 
     def parameters_count(self):
@@ -89,11 +93,11 @@ class SimCLR(nn.Module):
 
 class SimCLRLoss(object):
 
-    def __call__(self, device: torch.device, data: tuple, net: torch.nn.Module, stream: torch.cuda.Stream = None, lambda_=0.3):
+    def __call__(self, device: torch.device, data: tuple, net: torch.nn.Module, stream: torch.cuda.Stream = None, lambda_=0.1):
         x_batch, _, metadata = data
 
         # view for self supervised learning
-        transform = v2.Compose([v2.RandomResizedCrop(224, scale=(0.7, 1.0)),
+        transform = v2.Compose([v2.RandomResizedCrop(224, scale=(0.6, 1.0)),
                                 v2.RandomHorizontalFlip(),
                                 v2.RandomVerticalFlip(),
                                 v2.ColorJitter(brightness=0.2, contrast=0.2),
@@ -114,15 +118,14 @@ class SimCLRLoss(object):
         # unsup_loss = self.compute_loss(out_feat, device)
         unsup_loss = self.info_nce_loss(out_feat, device)  # faster then the above one
 
-        target = torch.cat([metadata[2], metadata[2]]).to(device)
+        # target = torch.cat([metadata[self.cell_type_idx], metadata[self.cell_type_idx]]).squeeze().to(device)
 
-        # cls_loss = 1 / F.cross_entropy(input=cls_digits, target=target)
-        cls_loss = F.cross_entropy(input=cls_digits, target=target)
-        wandb.log({"unsup loss": unsup_loss.item()})
-        wandb.log({"cls loss": cls_loss.item()})
-        return unsup_loss + lambda_ * cls_loss
+        # cls_loss = F.cross_entropy(input=cls_digits, target=target)
+        # wandb.log({"unsup loss": unsup_loss.item()})
+        # wandb.log({"cls loss": cls_loss.item()})
+        return unsup_loss
 
-    def info_nce_loss(self, features, device, temperature=1):
+    def info_nce_loss(self, features, device, temperature=0.5):
         """
         Implements Noise Contrastive Estimation loss as explained in the simCLR paper.
         Actual code is taken from here https://github.com/sthalles/SimCLR/blob/master/simclr.py
@@ -184,6 +187,12 @@ class SimCLRLoss(object):
         loss /= features.shape[0]
         return loss
 
+    def set_experiment_idx(self, idx):
+        self.experiment_idx = idx
+
+    def set_cell_type_idx(self, idx):
+        self.cell_type_idx = idx
+
 
 class ClassificationLoss(object):
     def __init__(self, device):
@@ -200,3 +209,152 @@ class ClassificationLoss(object):
         pred = net(x_batch)
         loss = self.loss_func(pred, y_batch)
         return loss
+
+
+class DataAugmentationDINO(object):
+    def __init__(self, global_crops_scale=(0.4, 1.), local_crops_scale=(0.05, 0.4), local_crops_number=8):
+        flip_and_color_jitter = v2.Compose([
+            v2.RandomHorizontalFlip(p=0.5),
+            v2.RandomApply(
+                [v2.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1)],
+                p=0.8
+            ),
+            v2.RandomGrayscale(p=0.2),
+        ])
+
+        def gaussian_blur(p): return v2.RandomApply(
+            [v2.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))],
+            p=p
+        )
+        normalize = v2.Compose([
+            v2.Identity()
+            # v2.ToTensor(),
+            # v2.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
+        ])
+
+        self.global_transfo1 = v2.Compose([
+            v2.RandomResizedCrop(224, scale=global_crops_scale, interpolation=Image.BICUBIC),
+            flip_and_color_jitter,
+            gaussian_blur(1.0),
+            normalize,
+        ])
+        # second global crop
+        self.global_transfo2 = v2.Compose([
+            v2.RandomResizedCrop(224, scale=global_crops_scale, interpolation=Image.BICUBIC),
+            flip_and_color_jitter,
+            gaussian_blur(0.1),
+            v2.RandomSolarize(0.5, 0.2),
+            normalize,
+        ])
+        # transformation for the local small crops
+        self.local_crops_number = local_crops_number
+        self.local_transfo = v2.Compose([
+            v2.RandomResizedCrop(96, scale=local_crops_scale, interpolation=Image.BICUBIC),
+            flip_and_color_jitter,
+            gaussian_blur(0.5),
+            normalize,
+        ])
+
+    def __call__(self, image):
+        crops = []
+        crops.append(self.global_transfo1(image))
+        crops.append(self.global_transfo2(image))
+        for _ in range(self.local_crops_number):
+            crops.append(self.local_transfo(image))
+        return crops
+
+
+class DINOLoss(nn.Module):
+    def __init__(self, out_dim, ncrops, warmup_teacher_temp, teacher_temp,
+                 warmup_teacher_temp_epochs, nepochs, student_temp=0.1,
+                 center_momentum=0.9):
+        super().__init__()
+        self.student_temp = student_temp
+        self.center_momentum = center_momentum
+        self.ncrops = ncrops
+        self.register_buffer("center", torch.zeros(1, out_dim))
+        # we apply a warm up for the teacher temperature because
+        # a too high temperature makes the training instable at the beginning
+        self.teacher_temp_schedule = np.concatenate((
+            np.linspace(warmup_teacher_temp,
+                        teacher_temp, warmup_teacher_temp_epochs),
+            np.ones(nepochs - warmup_teacher_temp_epochs) * teacher_temp
+        ))
+
+    def forward(self, student_output, teacher_output, epoch):
+        """
+        Cross-entropy between softmax outputs of the teacher and student networks.
+        """
+        student_out = student_output / self.student_temp
+        student_out = student_out.chunk(self.ncrops)
+
+        # teacher centering and sharpening
+        temp = self.teacher_temp_schedule[epoch]
+        teacher_out = F.softmax((teacher_output - self.center) / temp, dim=-1)
+        teacher_out = teacher_out.detach().chunk(2)
+
+        total_loss = 0
+        n_loss_terms = 0
+        for iq, q in enumerate(teacher_out):
+            for v in range(len(student_out)):
+                if v == iq:
+                    # we skip cases where student and teacher operate on the same view
+                    continue
+                loss = torch.sum(-q * F.log_softmax(student_out[v], dim=-1), dim=-1)
+                total_loss += loss.mean()
+                n_loss_terms += 1
+        total_loss /= n_loss_terms
+        self.update_center(teacher_output)
+        return total_loss
+
+    @torch.no_grad()
+    def update_center(self, teacher_output):
+        """
+        Update center used for teacher output.
+        """
+        batch_center = torch.sum(teacher_output, dim=0, keepdim=True)
+        # dist.all_reduce(batch_center)
+        # batch_center = batch_center / (len(teacher_output) * dist.get_world_size())
+        batch_center = batch_center / len(teacher_output)
+
+        # ema update
+        self.center = self.center * self.center_momentum + batch_center * (1 - self.center_momentum)
+
+
+class MultiCropWrapper(nn.Module):
+    """
+    Perform forward pass separately on each resolution input.
+    The inputs corresponding to a single resolution are clubbed and single
+    forward is run on the same resolution inputs. Hence we do several
+    forward passes = number of different resolutions used. We then
+    concatenate all the output features and run the head forward on these
+    concatenated features.
+    """
+
+    def __init__(self, backbone, head):
+        super(MultiCropWrapper, self).__init__()
+        # disable layers dedicated to ImageNet labels classification
+        backbone.fc, backbone.head = nn.Identity(), nn.Identity()
+        self.backbone = backbone
+        self.head = head
+
+    def forward(self, x):
+        # convert to list
+        if not isinstance(x, list):
+            x = [x]
+        idx_crops = torch.cumsum(torch.unique_consecutive(
+            torch.tensor([inp.shape[-1] for inp in x]),
+            return_counts=True,
+        )[1], 0)
+        start_idx, output = 0, torch.empty(0).to(x[0].device)
+        for end_idx in idx_crops:
+            _out = self.backbone(torch.cat(x[start_idx: end_idx]))
+            # The output is a tuple with XCiT model. See:
+            # https://github.com/facebookresearch/xcit/blob/master/xcit.py#L404-L405
+            if isinstance(_out, tuple):
+                _out = _out[0]
+            # accumulate outputs
+            output = torch.cat((output, _out))
+            start_idx = end_idx
+        # Run the head forward on the concatenated features.
+        return self.head(output)

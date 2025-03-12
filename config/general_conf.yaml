@@ -1,5 +1,5 @@
 # MODEL
-net: simclr # choose among [simclr]
+net: vit_small # choose among [simclr]
 backbone_name: vit_small
 
 # DIRECTORIES
@@ -10,15 +10,18 @@ load_backbone: ~
 metadata_path: /work/h2020deciderficarra_shared/rxrx1/metadata/m_3c_experiment_strat.csv
 
 # TRAINING OPTIONS
-epochs: 10
-batch_size: 256
+epochs: 50
+batch_size: 64
 loss: simclrloss # choose among [simclrloss, ce]
-opt: adam # choose among [adam,]
-lr: 1e-5
+opt: adamW # choose among [adam,]
+sched: poly # [onecycle, poly, CosineAnnealingWarmRestarts]
+lr: 0.0005
 evaluation_freq: 4
 model_save_freq: 10
 sched_pow: 1
 num_classes: 4
+sampler: False
+dataset_norm: True
 
 # HARDWARE
 device: gpu
@@ -28,4 +31,4 @@ evaluation_workers: 16
 
 # WNADB CONFIG
 project_name: "aibio_prj"
-run_name: "vit_small_back_test_2"
+run_name: "dino_base_poly"

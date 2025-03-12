@@ -41,7 +41,7 @@ class Trainer():
         validation_loss_values = []  # store every validation loss value
 
         # ============= Training Loop ===================
-        _, _, self.opt, self.scheduler = config_loader(self.config, self.dataset)
+        self.opt, self.sched = load_opt(self.config, net, self.dataset)
         if self.config['multiple_gpus']:
             net = nn.DataParallel(net)
         print("Starting training...", flush=True)
@@ -56,29 +56,27 @@ class Trainer():
                 loss.backward()
                 self.opt.step()
                 training_loss_values.append(loss.item())
-                wandb.log({"train_loss": loss.item(), "fold": fold_n})
+                wandb.log({"train_loss": loss.item()})
 
                 pbar.update(1)
                 pbar.set_postfix({'Loss': loss.item()})
+                if self.config['sched'] == "onecycle":
+                    self.scheduler.step()
+                    last_lr = self.scheduler.get_last_lr()
+                    wandb.log({"lr": last_lr[0]})
 
-            acc, _, _ = evaluate(net, test_dataloader, self.device, epoch)
-            wandb.log({"Accuracy": acc, "fold": fold_n})
+            if self.scheduler is not None and self.config['sched'] != "onecycle":
+                self.scheduler.step()
+                last_lr = self.scheduler.get_last_lr()
+                wandb.log({"lr": last_lr[0]})
 
-            val_loss = validation(net=net, val_loader=test_dataloader, losser=self.losser, epoch=epoch)
+            acc, _, _, val_loss = evaluate(net, test_dataloader, self.device, epoch, self.losser)
+            wandb.log({"Accuracy": acc})
+            # val_loss = validation(net=net, val_loader=test_dataloader, losser=self.losser, epoch=epoch)
             validation_loss_values += val_loss
             mean_loss = sum(val_loss) / len(val_loss) if val_loss else 0  # Division by zero paranoia
 
-            wandb.log({"val_loss": mean_loss, "fold": fold_n})
-
-            if self.scheduler is not None:
-                self.scheduler.step()
-                last_lr = self.scheduler.get_last_lr()
-                if isinstance(last_lr, list) and len(last_lr) == 1:
-                    last_lr = last_lr[0]
-                    wandb.log({"lr": last_lr, "fold": fold_n})
-                elif isinstance(last_lr, list) and len(last_lr) > 1:
-                    for i, lr in enumerate(last_lr):
-                        wandb.log({f"lr_{i}": lr, "fold": fold_n})
+            wandb.log({"val_loss": mean_loss})
 
         return training_loss_values, validation_loss_values
 
@@ -87,32 +85,18 @@ class Trainer():
         train_workers = self.config["train_workers"]
         evaluation_workers = self.config["evaluation_workers"]
         device = self.device
-        kf = KFold(n_splits=5, shuffle=True, random_state=self.seed)
         print('Creating the subsets of the dataset')
 
         self.init_wandb()
-        folds_accuracies = []
-        indices = np.arange(len(self.dataset))
-        for fold, (train_idx, val_idx) in enumerate(kf.split(indices)):
+        train_subset, test_subset = random_split(self.dataset, [0.7, 0.3])
 
-            net = copy.deepcopy(self.net).to(self.device)
-            train_subset = Subset(self.dataset, train_idx)
-            test_subset = Subset(self.dataset, val_idx)
+        # net = copy.deepcopy(self.net).to(self.device)
 
-            train_dataloader = DataLoader(train_subset, batch_size=self.config["batch_size"],
-                                          num_workers=train_workers, drop_last=False, prefetch_factor=8, persistent_workers=True, collate_fn=self.collate, pin_memory=True)
-            test_dataloader = DataLoader(test_subset, batch_size=self.config["batch_size"], shuffle=True,
-                                         num_workers=evaluation_workers, drop_last=False, prefetch_factor=8, collate_fn=self.collate)
+        train_dataloader = DataLoader(train_subset, batch_size=self.config["batch_size"],
+                                      num_workers=train_workers, drop_last=True, prefetch_factor=8, persistent_workers=False, collate_fn=self.collate)
+        test_dataloader = DataLoader(test_subset, batch_size=self.config["batch_size"], shuffle=True,
+                                     num_workers=evaluation_workers, drop_last=True, prefetch_factor=4, collate_fn=self.collate)
 
-            self.train_loop_(net, train_dataloader, test_dataloader, fold)
-            acc, _, _ = evaluate(net, test_dataloader, self.device, 0)
-            wandb.config.update({f"fold-{fold}-acc": f"{acc.item():.3f}"})
-            folds_accuracies.append(acc.item())
+        self.train_loop_(self.net, train_dataloader, test_dataloader, 0)
 
-        folds_accuracies = torch.tensor(folds_accuracies)
-
-        wandb.config.update({
-            "acc_std": f"{torch.std(folds_accuracies, dim=0).item():.3f}",
-            "acc_mean": f"{torch.mean(folds_accuracies, dim=0).item():.3f}",
-        })
         wandb.finish(0)

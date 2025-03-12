@@ -14,7 +14,7 @@ from sklearn.preprocessing import LabelEncoder
 
 class Rxrx1(Dataset):
 
-    def __init__(self, root_dir=None, metadata_path: str = None, dataframe: pd.DataFrame = None, mode: str = 'default'):
+    def __init__(self, root_dir=None, metadata_path: str = None, dataframe: pd.DataFrame = None, dataset_norm=False):
         super().__init__()
 
         if metadata_path is None and dataframe is None:
@@ -26,6 +26,7 @@ class Rxrx1(Dataset):
         if root_dir is None:
             raise RuntimeError('Rxrx1 dataset needs to be explicitly initialized with a root_dir')
 
+        self.dataset_norm = dataset_norm
         self.root_dir = os.path.join(root_dir, "rxrx1_v1.0")
         if not os.path.exists(self.root_dir):
             raise RuntimeError(f'Rxrx1 dataset was initialized with a non-existing root_dir: {self.root_dir}')
@@ -52,7 +53,7 @@ class Rxrx1(Dataset):
         self.num_classes = torch.tensor([cls for _, cls, _ in self.items]).unique().shape[0]
         self.transforms = v2.Compose([
             v2.ToImage(),
-            v2.ToDtype(torch.float, scale=False)
+            v2.ToDtype(torch.float, scale=(not self.dataset_norm))
         ])
 
     def normalize_(self, img, meta):
@@ -64,7 +65,9 @@ class Rxrx1(Dataset):
     def __getitem__(self, index):
         img_path, sirna_id, metadata = self.items[index]
         img = self.transforms(Image.open(img_path))
-        return (self.normalize_(img, metadata), sirna_id, metadata)
+        if self.dataset_norm:
+            return (self.normalize_(img, metadata), sirna_id, metadata)
+        return (img, sirna_id, metadata)
 
     def __len__(self):
         return len(self.items)

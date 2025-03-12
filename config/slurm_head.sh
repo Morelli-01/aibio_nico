@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH -e /homes/nmorelli/output/err_simclr_head.txt
 #SBATCH -o /homes/nmorelli/output/out_simclr_head.txt
-#SBATCH --job-name=simclr_vit_base_head
+#SBATCH --job-name=vit_small_head
 #SBATCH --account=ai4bio2024
 #SBATCH --partition=all_usr_prod
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=12
 #SBATCH --gres=gpu:1
-#SBATCH --mem=80G
+#SBATCH --mem=30G
 #SBATCH --time=24:00:00
-SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
+#SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
 SBATCH --nodelist=ailb-login-03
 
 

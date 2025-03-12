@@ -1,15 +1,15 @@
 #!/bin/bash
-#SBATCH -e /homes/nmorelli/output/err_new_loss3.txt
-#SBATCH -o /homes/nmorelli/output/out_new_loss.txt
-#SBATCH --job-name=simclr_vit_base
+#SBATCH -e /homes/nmorelli/output/err_dino_teacher_poly.txt
+#SBATCH -o /homes/nmorelli/output/out_back.txt
+#SBATCH --job-name=dino_base
 #SBATCH --account=ai4bio2024
 #SBATCH --partition=all_usr_prod
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=16
 #SBATCH --gres=gpu:2
-#SBATCH --mem=80G
+#SBATCH --mem=50G
 #SBATCH --time=24:00:00
-#SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
+SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
 SBATCH --nodelist=ailb-login-03
 
 
