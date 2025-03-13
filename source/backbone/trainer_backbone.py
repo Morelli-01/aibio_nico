@@ -186,7 +186,11 @@ class DinoTrainer():
         validation_loss_values = []  # store every validation loss value
 
         # ============= Training Loop ===================
-
+        momentum_scheduler = CosineScheduler(
+            base_value=0.996,   # Initial momentum
+            final_value=0.9999,  # Final momentum
+            total_iters=self.config["epochs"] * len(train_dataloader)
+        )
         if self.config['multiple_gpus']:
             self.student = nn.DataParallel(self.student)
             self.teacher = nn.DataParallel(self.teacher)
@@ -216,7 +220,7 @@ class DinoTrainer():
                 pbar.update(1)
                 pbar.set_postfix({'Loss': loss.item()})
                 with torch.no_grad():
-                    m = self.scheduler.get_last_lr()[0]  # momentum parameter
+                    m = momentum_scheduler(epoch * len(train_dataloader) + i)  # momentum parameter
                     for param_q, param_k in zip(self.student.module.parameters(), self.teacher.module.parameters()):
                         param_k.data.mul_(m).add_((1 - m) * param_q.detach().data)
 
@@ -262,6 +266,10 @@ class DinoTrainer():
             DINOHead(in_dim=384,
                      out_dim=65536, use_bn=True),
         )
+        for p in self.teacher.parameters():
+            p.requires_grad = False
+        print(f"Student and Teacher are built: they are both {self.config['net']} network.")
+
         self.teacher, self.student = self.teacher.to(self.device), self.student.to(self.device)
         if self.config["sampler"]:
             sampler = ExperimentSampler(dataset, batch_size=self.config["batch_size"], shuffle=True)
@@ -274,6 +282,9 @@ class DinoTrainer():
 
         # ===========Load optim and sched =============================
         self.opt, self.scheduler = load_opt(self.config, self.student, self.dataset)
+        # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        # self.opt, T_max=self.config["epochs"] * len(train_dataloader))
+
         # params_groups = utils.get_params_groups(self.student)
         # self.opt = torch.optim.AdamW(params_groups)  # to use with ViTs
 

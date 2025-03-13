@@ -133,7 +133,7 @@ def load_opt(config: dict, net: torch.nn.Module, dataset: torch.utils.data.Datas
     if config['opt'] == "adam":
         opt = torch.optim.Adam(net.parameters(), lr=float(config['lr']))
     elif config['opt'] == "adamW":
-        opt = torch.optim.AdamW(net.parameters(), float(config['lr']))
+        opt = torch.optim.AdamW(net.parameters(), lr=float(config['lr']))
     else:
         raise ValueError("Invalid optimizer")
 
@@ -326,40 +326,19 @@ def save_model(epoch, net, opt, train_loss, val_loss, batch_size, checkpoint_dir
     #             return img
 
 
-# class GaussianBlur(transforms.Transform):
-#     """
-#     Apply Gaussian Blur to the image tensor.
-#     """
+class CosineScheduler:
+    def __init__(self, base_value, final_value, total_iters, warmup_iters=0, start_warmup_value=0):
+        self.base_value = base_value
+        self.final_value = final_value
+        self.total_iters = total_iters
+        self.warmup_iters = warmup_iters
+        self.start_warmup_value = start_warmup_value
 
-#     def __init__(self, p=0.5, radius_min=0.1, radius_max=2.0):
-#         super().__init__()
-#         self.p = p
-#         self.radius_min = radius_min
-#         self.radius_max = radius_max
-
-#     def _apply_image(self, img: torch.Tensor) -> torch.Tensor:
-#         if random.random() > self.p:
-#             return img
-#         radius = random.uniform(self.radius_min, self.radius_max)
-#         return transform_F.gaussian_blur(img, kernel_size=int(2 * round(radius) + 1))
-
-#     def forward(self, img: torch.Tensor) -> torch.Tensor:
-#         return self._apply_image(img)
-
-
-# class Solarization(transforms.Transform):
-#     """
-#     Apply Solarization to the image tensor.
-#     """
-
-#     def __init__(self, p: float):
-#         super().__init__()
-#         self.p = p
-
-#     def _apply_image(self, img: torch.Tensor) -> torch.Tensor:
-#         if random.random() > self.p:
-#             return img
-#         return transform_F.solarize(img)
-
-#     def forward(self, img: torch.Tensor) -> torch.Tensor:
-#         return self._apply_image(img)
+    def __call__(self, iteration):
+        if iteration < self.warmup_iters:
+            return self.start_warmup_value + (self.base_value - self.start_warmup_value) * iteration / self.warmup_iters
+        elif iteration >= self.total_iters:
+            return self.final_value
+        else:
+            return self.final_value + 0.5 * (self.base_value - self.final_value) * \
+                (1 + math.cos(math.pi * (iteration - self.warmup_iters) / (self.total_iters - self.warmup_iters)))

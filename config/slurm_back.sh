@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -e /homes/nmorelli/output/err_dino_teacher_poly.txt
+#SBATCH -e /homes/nmorelli/output/err_dino_poly.txt
 #SBATCH -o /homes/nmorelli/output/out_back.txt
 #SBATCH --job-name=dino_base
 #SBATCH --account=ai4bio2024
@@ -9,7 +9,7 @@
 #SBATCH --gres=gpu:2
 #SBATCH --mem=50G
 #SBATCH --time=24:00:00
-SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
+#SBATCH --constraint=gpu_A40_48G|gpu_L40S_48G
 SBATCH --nodelist=ailb-login-03
 
 
